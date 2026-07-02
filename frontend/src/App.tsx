@@ -8,6 +8,7 @@ import EnvironmentPage from "./pages/EnvironmentPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 import SmartMobilityPage from "./pages/SmartMobilityPage";
+import ForecastPage from "./pages/ForecastPage";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/citizen-reports" element={<CitizenReportsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/forecast" element={<ForecastPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,14 +1,4 @@
-import {
-  BarChart3,
-  BrainCircuit,
-  Car,
-  ClipboardList,
-  FileText,
-  LayoutDashboard,
-  Leaf,
-  Settings,
-  ShieldCheck,
-} from "lucide-react";
+import { BarChart3, BrainCircuit, Car, ClipboardList, FileText, LayoutDashboard, Leaf, Settings, ShieldCheck, TrendingUp } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const navigationItems = [
@@ -16,9 +6,11 @@ const navigationItems = [
   { label: "AI Decision Center", to: "/decision-center", icon: BrainCircuit },
   { label: "Smart Mobility", to: "/mobility", icon: Car },
   { label: "Environment", to: "/environment", icon: Leaf },
+  { label: "Forecast Intelligence", to: "/forecast", icon: TrendingUp },
   { label: "Citizen Reports", to: "/citizen-reports", icon: ClipboardList },
   { label: "Reports", to: "/reports", icon: FileText },
   { label: "Settings", to: "/settings", icon: Settings },
+  
 ];
 
 export default function Sidebar() {

@@ -176,3 +176,46 @@ export async function submitCitizenReport(input: {
 
   return response.json();
 }
+
+export type RiskForecastItem = {
+  zone: string;
+  predicted_risk_score: number;
+  risk_level: string;
+  predicted_congestion_score: number;
+  predicted_aqi: number;
+  predicted_water_risk_score: number;
+  unresolved_reports: number;
+  anomaly_detected: boolean;
+  anomaly_reason: string;
+  recommended_action: string;
+};
+
+export type ForecastAlert = {
+  alert_id: string;
+  zone: string;
+  alert_type: string;
+  severity: string;
+  message: string;
+  recommended_action: string;
+  anomaly_detected: boolean;
+};
+
+export async function getRiskForecast(): Promise<RiskForecastItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/forecast/risk`);
+
+  if (!response.ok) {
+    throw new Error("Unable to load risk forecast");
+  }
+
+  return response.json();
+}
+
+export async function getForecastAlerts(): Promise<ForecastAlert[]> {
+  const response = await fetch(`${API_BASE_URL}/api/forecast/alerts`);
+
+  if (!response.ok) {
+    throw new Error("Unable to load forecast alerts");
+  }
+
+  return response.json();
+}

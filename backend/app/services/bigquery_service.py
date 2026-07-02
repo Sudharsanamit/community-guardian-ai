@@ -241,4 +241,139 @@ class BigQueryService:
             "status": "Under Review",
         }
 
+    def get_risk_forecast(self) -> list[dict]:
+        query = f"""
+        WITH citizen_summary AS (
+          SELECT
+            zone,
+            COUNTIF(status IN ('Open', 'Under Review')) AS unresolved_reports,
+            COUNTIF(severity IN ('High', 'Critical')) AS high_priority_reports
+          FROM {self.citizen_reports_table}
+          GROUP BY zone
+        ),
+        traffic_summary AS (
+          SELECT
+            zone,
+            AVG(congestion_score) AS avg_congestion_score,
+            STDDEV(congestion_score) AS congestion_stddev,
+            MAX(congestion_score) AS max_congestion_score
+          FROM {self.traffic_metrics_table}
+          GROUP BY zone
+        ),
+        environment_summary AS (
+          SELECT
+            zone,
+            AVG(aqi) AS avg_aqi,
+            AVG(water_risk_score) AS avg_water_risk_score,
+            AVG(waste_collection_efficiency) AS avg_waste_efficiency
+          FROM {self.environment_metrics_table}
+          GROUP BY zone
+        )
+        SELECT
+          citizen_summary.zone,
+
+          ROUND(
+            traffic_summary.avg_congestion_score
+            + (citizen_summary.unresolved_reports * 3)
+            + (citizen_summary.high_priority_reports * 5),
+            2
+          ) AS predicted_congestion_score,
+
+          ROUND(
+            environment_summary.avg_aqi
+            + (citizen_summary.high_priority_reports * 1.5),
+            2
+          ) AS predicted_aqi,
+
+          ROUND(
+            environment_summary.avg_water_risk_score
+            + (citizen_summary.unresolved_reports * 1.2),
+            2
+          ) AS predicted_water_risk_score,
+
+          citizen_summary.unresolved_reports,
+          citizen_summary.high_priority_reports,
+
+          ROUND(
+            (
+              traffic_summary.avg_congestion_score * 0.35
+              + environment_summary.avg_aqi * 0.20
+              + environment_summary.avg_water_risk_score * 0.15
+              + citizen_summary.unresolved_reports * 4
+              + citizen_summary.high_priority_reports * 7
+            ),
+            2
+          ) AS predicted_risk_score,
+
+          ROUND(traffic_summary.avg_congestion_score, 2) AS historical_congestion_average,
+          ROUND(traffic_summary.max_congestion_score, 2) AS historical_congestion_maximum,
+          ROUND(COALESCE(traffic_summary.congestion_stddev, 0), 2) AS congestion_variation
+
+        FROM citizen_summary
+        JOIN traffic_summary USING (zone)
+        JOIN environment_summary USING (zone)
+        ORDER BY predicted_risk_score DESC
+        """
+
+        return [dict(row) for row in self.client.query(query).result()]
+
+    def get_forecast_alerts(self) -> list[dict]:
+        forecasts = self.get_risk_forecast()
+        alerts = []
+
+        for index, forecast in enumerate(forecasts, start=1):
+            risk_score = float(forecast["predicted_risk_score"])
+            unresolved_reports = int(forecast["unresolved_reports"])
+            high_priority_reports = int(forecast["high_priority_reports"])
+
+            anomaly_detected = (
+                risk_score >= 75
+                or unresolved_reports >= 5
+                or high_priority_reports >= 3
+            )
+
+            if risk_score >= 85:
+                severity = "Critical"
+                alert_type = "High Community Risk"
+                recommended_action = (
+                    "Escalate to the city operations team, validate the evidence, "
+                    "and allocate immediate inspection resources."
+                )
+            elif risk_score >= 65:
+                severity = "High"
+                alert_type = "Elevated Community Risk"
+                recommended_action = (
+                    "Schedule priority inspection and assign relevant public-service teams."
+                )
+            elif risk_score >= 45:
+                severity = "Medium"
+                alert_type = "Emerging Community Risk"
+                recommended_action = (
+                    "Monitor the zone and prepare preventive action if the trend continues."
+                )
+            else:
+                severity = "Low"
+                alert_type = "Routine Monitoring"
+                recommended_action = (
+                    "Continue monitoring the zone through regular community operations."
+                )
+
+            alerts.append(
+                {
+                    "alert_id": f"ALERT-{index:03d}",
+                    "zone": forecast["zone"],
+                    "alert_type": alert_type,
+                    "severity": severity,
+                    "message": (
+                        f"{forecast['zone']} has a predicted risk score of "
+                        f"{risk_score}. It has {unresolved_reports} unresolved "
+                        f"reports and {high_priority_reports} high-priority reports."
+                    ),
+                    "recommended_action": recommended_action,
+                    "anomaly_detected": anomaly_detected,
+                }
+            )
+
+        return alerts
+
 bigquery_service = BigQueryService()
