@@ -1,0 +1,22 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
+dist/
+.env
+.env.*
+
+# Google Cloud credentials and secrets
+service-account-key.json
+*.pem
+*.key
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
