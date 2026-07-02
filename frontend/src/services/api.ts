@@ -56,3 +56,123 @@ export async function getDashboardOverview(): Promise<DashboardOverviewResponse>
 
   return response.json();
 }
+
+export type DecisionQuestionRequest = {
+  question: string;
+};
+
+export type EvidenceItem = {
+  label: string;
+  value: string;
+  explanation: string;
+};
+
+export type DecisionAnswerResponse = {
+  question: string;
+  summary: string;
+  recommendation: string;
+  expected_impact: string;
+  priority_zone: string;
+  confidence: number;
+  requires_human_review: boolean;
+  evidence: EvidenceItem[];
+  disclaimer: string;
+  generated_by: string;
+};
+
+export async function askDecisionIntelligence(
+  question: string,
+): Promise<DecisionAnswerResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/decision/ask`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ question }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Unable to generate AI decision intelligence",
+    );
+  }
+
+  return response.json();
+}
+
+export type ImageAnalysisResponse = {
+  category: string;
+  severity: string;
+  confidence: number;
+  summary: string;
+  detected_signals: string[];
+  recommended_action: string;
+  requires_human_review: boolean;
+  disclaimer: string;
+  generated_by: string;
+};
+
+export type CitizenReportSubmitResponse = {
+  message: string;
+  report_id: string;
+  status: string;
+  image_gcs_uri: string;
+  requires_human_review: boolean;
+};
+
+export async function analyzeCommunityImage(
+  image: File,
+  description: string,
+): Promise<ImageAnalysisResponse> {
+  const formData = new FormData();
+  formData.append("image", image);
+  formData.append("description", description);
+
+  const response = await fetch(`${API_BASE_URL}/api/reports/analyze-image`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(errorData?.detail || "Unable to analyze image");
+  }
+
+  return response.json();
+}
+
+export async function submitCitizenReport(input: {
+  image: File;
+  category: string;
+  severity: string;
+  description: string;
+  zone: string;
+  latitude: number;
+  longitude: number;
+}): Promise<CitizenReportSubmitResponse> {
+  const formData = new FormData();
+
+  formData.append("image", input.image);
+  formData.append("category", input.category);
+  formData.append("severity", input.severity);
+  formData.append("description", input.description);
+  formData.append("zone", input.zone);
+  formData.append("latitude", String(input.latitude));
+  formData.append("longitude", String(input.longitude));
+
+  const response = await fetch(`${API_BASE_URL}/api/reports/submit`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(errorData?.detail || "Unable to submit citizen report");
+  }
+
+  return response.json();
+}

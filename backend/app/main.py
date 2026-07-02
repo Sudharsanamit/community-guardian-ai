@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes.decision import router as decision_router
 
 from app.api.routes.dashboard import router as dashboard_router
+
+from app.api.routes.reports import router as reports_router
 
 app = FastAPI(
     title="Community Guardian AI API",
@@ -30,3 +33,5 @@ def health_check() -> dict:
 
 
 app.include_router(dashboard_router)
+app.include_router(decision_router)
+app.include_router(reports_router)
