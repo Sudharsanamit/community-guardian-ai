@@ -1,13 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.decision import router as decision_router
-
 from app.api.routes.dashboard import router as dashboard_router
-
 from app.api.routes.reports import router as reports_router
-
 from app.api.routes.forecast import router as forecast_router
-
 from app.api.routes.workflow import router as workflow_router
 
 app = FastAPI(
@@ -16,11 +12,12 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Updated CORSMiddleware section as per instructions
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        "http://localhost:4173",
     ],
     allow_credentials=True,
     allow_methods=["*"],

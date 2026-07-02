@@ -24,3 +24,10 @@ Thumbs.db
 # Generated prototype data files
 datasets/*.csv
 !datasets/.gitkeep
+
+backend/.env
+frontend/.env
+backend/venv/
+frontend/node_modules/
+__pycache__/
+*.pyc
