@@ -20,3 +20,7 @@ service-account-key.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Generated prototype data files
+datasets/*.csv
+!datasets/.gitkeep
