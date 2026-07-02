@@ -10,61 +10,42 @@ import {
   Users,
 } from "lucide-react";
 
-import { getBackendHealth, type HealthResponse } from "../services/api";
+import {
+  getBackendHealth,
+  getDashboardOverview,
+  type DashboardOverviewResponse,
+  type HealthResponse,
+} from "../services/api";
 
 type HealthState = "loading" | "connected" | "offline";
-
-const metrics = [
-  {
-    title: "Community Health Score",
-    value: "87",
-    suffix: "/100",
-    description: "Improving across monitored zones",
-    icon: HeartPulse,
-    status: "Positive trend",
-  },
-  {
-    title: "Active Risk Alerts",
-    value: "12",
-    suffix: "",
-    description: "3 require immediate review",
-    icon: ShieldAlert,
-    status: "Needs attention",
-  },
-  {
-    title: "Citizen Reports",
-    value: "248",
-    suffix: "",
-    description: "18% increase this week",
-    icon: Users,
-    status: "Live data",
-  },
-  {
-    title: "Environmental Index",
-    value: "72",
-    suffix: "/100",
-    description: "Moderate air-quality risk",
-    icon: Cloud,
-    status: "Monitor closely",
-  },
-];
 
 export default function DashboardPage() {
   const [healthState, setHealthState] = useState<HealthState>("loading");
   const [healthData, setHealthData] = useState<HealthResponse | null>(null);
+  const [dashboardData, setDashboardData] =
+    useState<DashboardOverviewResponse | null>(null);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function checkBackend() {
+    async function loadDashboard() {
       try {
-        const data = await getBackendHealth();
-        setHealthData(data);
+        const [health, overview] = await Promise.all([
+          getBackendHealth(),
+          getDashboardOverview(),
+        ]);
+
+        setHealthData(health);
         setHealthState("connected");
+        setDashboardData(overview);
       } catch {
         setHealthState("offline");
+        setDashboardError(
+          "Unable to load live analytics. Check FastAPI, BigQuery, and Google Cloud authentication.",
+        );
       }
     }
 
-    checkBackend();
+    loadDashboard();
   }, []);
 
   return (
@@ -112,9 +93,16 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {dashboardError && (
+        <div className="mb-6 rounded-xl border border-red-900 bg-red-950/40 p-4 text-sm text-red-200">
+          {dashboardError}
+        </div>
+      )}
+
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((metric) => {
-          const Icon = metric.icon;
+        {dashboardData?.metrics.map((metric, index) => {
+          const metricIcons = [HeartPulse, ShieldAlert, Users, Cloud];
+          const Icon = metricIcons[index] || Activity;
 
           return (
             <article
@@ -151,15 +139,14 @@ export default function DashboardPage() {
                 AI Executive Summary
               </p>
               <h3 className="text-xl font-semibold">
-                Priority action is required in Zone C
+                {dashboardData?.recommendation.title || "Loading AI decision evidence..."}
               </h3>
             </div>
           </div>
 
           <p className="mt-6 leading-7 text-slate-300">
-            Citizen reports and traffic indicators show a rising risk pattern
-            in Zone C. The platform recommends assigning traffic-management
-            staff and municipal inspection resources within the next 24 hours.
+            {dashboardData?.recommendation.action ||
+              "Loading analytics from BigQuery..."}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -167,7 +154,7 @@ export default function DashboardPage() {
               High Priority
             </span>
             <span className="rounded-full bg-sky-500/15 px-3 py-1 text-sm text-sky-300">
-              Confidence: 94%
+              Confidence: {dashboardData?.recommendation.confidence || 0}%
             </span>
             <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-sm text-emerald-300">
               Human review required
@@ -182,20 +169,18 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-5 space-y-4">
-            <div className="border-l-2 border-red-400 pl-3">
-              <p className="font-medium">Traffic congestion</p>
-              <p className="text-sm text-slate-400">Zone C · High severity</p>
-            </div>
-            <div className="border-l-2 border-amber-400 pl-3">
-              <p className="font-medium">Air-quality warning</p>
-              <p className="text-sm text-slate-400">
-                Zone E · Moderate severity
-              </p>
-            </div>
-            <div className="border-l-2 border-sky-400 pl-3">
-              <p className="font-medium">Citizen report spike</p>
-              <p className="text-sm text-slate-400">Zone B · Needs review</p>
-            </div>
+            {dashboardData?.alerts.map((alert) => (
+              <div
+                key={`${alert.title}-${alert.zone}-${alert.description}`}
+                className="border-l-2 border-amber-400 pl-3"
+              >
+                <p className="font-medium">{alert.title}</p>
+                <p className="text-sm text-slate-400">
+                  {alert.zone} · {alert.severity}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{alert.description}</p>
+              </div>
+            ))}
           </div>
         </article>
       </section>

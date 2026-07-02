@@ -1,12 +1,12 @@
-from datetime import datetime, timezone
-
-from fastapi import FastAPI  
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes.dashboard import router as dashboard_router
 
 app = FastAPI(
     title="Community Guardian AI API",
-    description="Backend API for the Community Guardian AI Decision Intelligence Platform.",
-    version="0.1.0",
+    description="AI-powered decision intelligence platform for smarter communities.",
+    version="1.0.0",
 )
 
 app.add_middleware(
@@ -21,18 +21,12 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Community Guardian AI API is running",
-        "docs": "/docs",
-    }
-
-
 @app.get("/health")
-async def health_check():
+def health_check() -> dict:
     return {
         "status": "healthy",
-        "service": "community-guardian-ai-backend",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "Community Guardian AI FastAPI backend",
     }
+
+
+app.include_router(dashboard_router)
