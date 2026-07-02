@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from uuid import uuid4
+
 from google.cloud import bigquery
 
 from app.core.config import settings
 
-from datetime import datetime, timezone
-from uuid import uuid4
 
 class BigQueryService:
     def __init__(self) -> None:
@@ -375,5 +376,53 @@ class BigQueryService:
             )
 
         return alerts
+
+    def create_workflow_decision_log(
+        self,
+        alert_id: str,
+        zone: str,
+        alert_type: str,
+        severity: str,
+        ai_action_plan: str,
+        recommended_owner_team: str,
+        recommended_priority: str,
+        human_decision: str,
+        human_notes: str,
+    ) -> dict:
+        decision_id = f"DEC-{uuid4().hex[:10].upper()}"
+
+        row = {
+            "decision_id": decision_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "alert_id": alert_id,
+            "zone": zone,
+            "alert_type": alert_type,
+            "severity": severity,
+            "ai_action_plan": ai_action_plan,
+            "recommended_owner_team": recommended_owner_team,
+            "recommended_priority": recommended_priority,
+            "human_decision": human_decision,
+            "human_notes": human_notes,
+            "decision_status": (
+                "Approved for stakeholder action"
+                if human_decision == "Approved"
+                else "Rejected by stakeholder"
+            ),
+            "model_name": settings.gemini_model,
+            "source": "Community Guardian AI Workflow Automation",
+        }
+
+        table_id = f"{self.project_id}.{self.dataset}.decision_logs"
+
+        errors = self.client.insert_rows_json(table_id, [row])
+
+        if errors:
+            raise ValueError(f"BigQuery decision-log insert failed: {errors}")
+
+        return {
+            "decision_id": decision_id,
+            "decision_status": row["decision_status"],
+        }
+
 
 bigquery_service = BigQueryService()

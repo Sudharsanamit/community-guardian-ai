@@ -219,3 +219,73 @@ export async function getForecastAlerts(): Promise<ForecastAlert[]> {
 
   return response.json();
 }
+
+export type ActionPlanResponse = {
+  alert_id: string;
+  zone: string;
+  action_plan: string;
+  owner_team: string;
+  priority: string;
+  estimated_response_window: string;
+  stakeholder_review_required: boolean;
+  safety_note: string;
+  generated_by: string;
+};
+
+export async function generateActionPlan(input: {
+  alert_id: string;
+  zone: string;
+  alert_type: string;
+  severity: string;
+  alert_message: string;
+  recommended_action: string;
+}): Promise<ActionPlanResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/workflow/generate-action-plan`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail || "Unable to generate action plan");
+  }
+
+  return response.json();
+}
+
+export async function recordWorkflowDecision(input: {
+  alert_id: string;
+  zone: string;
+  alert_type: string;
+  severity: string;
+  ai_action_plan: string;
+  recommended_owner_team: string;
+  recommended_priority: string;
+  human_decision: "Approved" | "Rejected";
+  human_notes: string;
+}): Promise<{
+  decision_id: string;
+  decision_status: string;
+  message: string;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/workflow/record-decision`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail || "Unable to record decision");
+  }
+
+  return response.json();
+}

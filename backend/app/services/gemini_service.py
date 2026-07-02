@@ -147,5 +147,72 @@ Return this exact JSON structure:
 
         return json.loads(response.text)
 
+    def generate_alert_action_plan(
+        self,
+        alert_id: str,
+        zone: str,
+        alert_type: str,
+        severity: str,
+        alert_message: str,
+        recommended_action: str,
+    ) -> dict:
+        prompt = f"""
+You are Community Guardian AI, an operational decision-support assistant for a city community platform.
+
+Create a concise action-plan draft for a community alert.
+
+Alert ID: {alert_id}
+Zone: {zone}
+Alert type: {alert_type}
+Severity: {severity}
+Alert evidence summary: {alert_message}
+Existing system recommendation: {recommended_action}
+
+Rules:
+1. Do not make autonomous decisions or claim that resources were deployed.
+2. Recommend a human stakeholder review before any real-world action.
+3. Do not identify or blame individuals.
+4. Use only the available alert information.
+5. Keep recommendations practical for a city operations prototype.
+6. Return valid JSON only. Do not use markdown.
+
+Allowed owner teams:
+- Traffic Operations Team
+- Environmental Monitoring Team
+- Water and Utilities Team
+- Waste Management Team
+- Community Response Team
+- City Operations Control Room
+
+Allowed priority values:
+- Low
+- Medium
+- High
+- Critical
+
+Return exactly this JSON:
+{{
+  "action_plan": "3 to 5 concise operational steps",
+  "owner_team": "one allowed owner team",
+  "priority": "one allowed priority value",
+  "estimated_response_window": "example: Review within 24 hours",
+  "safety_note": "short note explaining that human approval is required"
+}}
+"""
+
+        response = self.client.models.generate_content(
+            model=settings.gemini_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                response_mime_type="application/json",
+            ),
+        )
+
+        if not response.text:
+            raise ValueError("Gemini returned an empty workflow action plan.")
+
+        return json.loads(response.text)
+
 
 gemini_service = GeminiService()

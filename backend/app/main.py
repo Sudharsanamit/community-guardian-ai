@@ -8,6 +8,8 @@ from app.api.routes.reports import router as reports_router
 
 from app.api.routes.forecast import router as forecast_router
 
+from app.api.routes.workflow import router as workflow_router
+
 app = FastAPI(
     title="Community Guardian AI API",
     description="AI-powered decision intelligence platform for smarter communities.",
@@ -38,3 +40,4 @@ app.include_router(dashboard_router)
 app.include_router(decision_router)
 app.include_router(reports_router)
 app.include_router(forecast_router)
+app.include_router(workflow_router)
